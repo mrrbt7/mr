@@ -461,7 +461,8 @@ function CompLog({log,onChange}){
 function ImportModal({boardId,buckets,onImport,onClose}){
   const [rows,setRows]=useState([]);
   const [error,setError]=useState("");
-  const [status,setStatus]=useState("idle"); // idle | preview | importing | done
+  const [status,setStatus]=useState("idle");
+  const [sourceInfo,setSourceInfo]=useState(null);
   const TEMPLATE_HEADERS=["title","notes","status","priority","frequency","dueDate","time","bucket","who","duration","action"];
   const STATUSES=["list","do","nextup","inprogress"];
   const PRIORITIES=["normal","low","high","crush"];
@@ -471,6 +472,24 @@ function ImportModal({boardId,buckets,onImport,onClose}){
       '"Buy groceries","Milk eggs bread","list","normal","","2025-03-15","","Errands","","",""',
     ].join("\n");
     const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="daycrush-import-template.csv";a.click();
+  };
+  const parseJSON=text=>{
+    try{
+      const obj=JSON.parse(text);
+      if(!obj.tasks||!Array.isArray(obj.tasks)){setError("Invalid board export — missing tasks array.");return;}
+      const parsed=obj.tasks.map(t=>{
+        const fresh=mkTask(t.status||"list",boardId);
+        Object.assign(fresh,t);
+        fresh.id=genId();fresh.boardId=boardId;fresh.done=false;fresh.completionLog=[];
+        if(t._bucketLabel){
+          const match=buckets.find(b=>b.label.toLowerCase()===t._bucketLabel.toLowerCase()||b.emoji===t._bucketEmoji);
+          fresh.bucketId=match?match.id:null;
+        } else fresh.bucketId=null;
+        return fresh;
+      });
+      setSourceInfo({boardName:obj.boardName||"Unknown",taskCount:parsed.length,bucketCount:(obj.buckets||[]).length});
+      setRows(parsed);setError("");setStatus("preview");
+    }catch(e){setError("Could not parse JSON: "+e.message);}
   };
   const parse=text=>{
     const lines=text.split(/\r?\n/).filter(l=>l.trim());
@@ -518,7 +537,13 @@ function ImportModal({boardId,buckets,onImport,onClose}){
   const handleFile=e=>{
     const file=e.target.files[0];if(!file)return;
     const reader=new FileReader();
-    reader.onload=ev=>{try{parse(ev.target.result);}catch(ex){setError("Parse error: "+ex.message);}};
+    reader.onload=ev=>{
+      try{
+        const text=ev.target.result;
+        if(file.name.endsWith(".json")||file.name.endsWith(".dcboard")){parseJSON(text);}
+        else{parse(text);}
+      }catch(ex){setError("Parse error: "+ex.message);}
+    };
     reader.readAsText(file);
   };
   const handleImport=async()=>{
@@ -545,6 +570,7 @@ function ImportModal({boardId,buckets,onImport,onClose}){
           <div style={{textAlign:"center",padding:"40px 0",color:MUTED,fontSize:14}}>Importing {rows.length} tasks…</div>
         ):status==="preview"?(
           <div>
+            {sourceInfo&&<div style={{padding:"8px 10px",borderRadius:7,background:"#0a140a",border:"1px solid #30D15833",marginBottom:10,fontSize:11,color:"#30D158"}}>📦 From: <b>{sourceInfo.boardName}</b> · {sourceInfo.taskCount} tasks</div>}
             <div style={{fontSize:12,color:LIME,fontWeight:600,marginBottom:12}}>✓ {rows.length} tasks ready to import</div>
             <div style={{maxHeight:300,overflowY:"auto",marginBottom:12}}>
               {rows.map((t,i)=>(
@@ -569,8 +595,8 @@ function ImportModal({boardId,buckets,onImport,onClose}){
               <button onClick={downloadTemplate} style={{padding:"8px 16px",borderRadius:7,border:`1px solid ${BORDER}`,background:"#1a1a1a",color:TEXT,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>⬇ Download Template</button>
             </div>
             <div style={{marginBottom:8}}>
-              <label style={{display:"block",fontWeight:600,fontSize:12,marginBottom:8,color:MUTED}}>Upload CSV or TSV file:</label>
-              <input type="file" accept=".csv,.tsv,.txt" onChange={handleFile}
+              <label style={{display:"block",fontWeight:600,fontSize:12,marginBottom:4,color:MUTED}}>Upload file — CSV/TSV  <span style={{color:"#5E5CE6",fontWeight:700}}>or Board Export (.json)</span></label>
+              <input type="file" accept=".csv,.tsv,.txt,.json,.dcboard" onChange={handleFile}
                 style={{width:"100%",padding:"10px",borderRadius:8,border:`1px solid ${BORDER}`,background:"#111",color:TEXT,fontSize:12,fontFamily:"inherit",cursor:"pointer",boxSizing:"border-box"}}/>
             </div>
             {error&&<div style={{color:"#FF453A",fontSize:12,marginTop:8}}>⚠ {error}</div>}
@@ -1013,7 +1039,7 @@ function AdminSection(){
   );
 }
 
-function SettingsMdl({settings,onChange,onBuckets,onMembers,onActions,onBrands,onPersons,onClose,boardName,userRole,onCleanSort,onShowLog,onExportTasks,onExportLog,onBoardSort,onSnoozeOverdue,onTabata,onSync,syncing}){
+function SettingsMdl({settings,onChange,onBuckets,onMembers,onActions,onBrands,onPersons,onClose,boardName,userRole,onCleanSort,onShowLog,onExportTasks,onExportLog,onExportBoard,onBoardSort,onSnoozeOverdue,onTabata,onSync,syncing}){
   const {cardBg:sBg,border:sBo,text:sTx,muted:sMu,inp:sInp}=useTheme();
   const selSt={padding:"5px 8px",borderRadius:7,border:`1px solid ${sBo}`,background:sInp,color:sTx,fontSize:12,fontFamily:"inherit",cursor:"pointer",outline:"none"};
   const tog=k=>onChange({...settings,[k]:!settings[k]});
@@ -1052,6 +1078,7 @@ function SettingsMdl({settings,onChange,onBuckets,onMembers,onActions,onBrands,o
               {/* Managers moved to Sidebar */}
               <div style={{display:"flex",gap:6}}>{btn("👥 Members",()=>{onMembers();onClose();})}{btn("📋 Log",()=>{onShowLog();onClose();})}</div>
               <div style={{display:"flex",gap:6}}>{btn("📤 Tasks",()=>onExportTasks())}{btn("📤 Log",()=>onExportLog())}</div>
+              <div style={{display:"flex",gap:6}}>{btn("📦 Export Board",()=>onExportBoard(),"#5E5CE6")}</div>
               <div style={{display:"flex",gap:6}}>{btn("⚡ Board Sort",()=>{onBoardSort();onClose();},"#5E5CE6")}{btn("⟳ Clean Sort",()=>{onCleanSort();onClose();},"#4ECDC4")}</div>
               <div style={{display:"flex",gap:6}}>{btn("💤 Snooze Overdue",()=>{onSnoozeOverdue();onClose();},"#FF9F0A")}</div>
               <div style={{display:"flex",gap:6}}>{btn(syncing?"↻ Syncing…":"↻ Sync Now",()=>{onSync&&onSync();},"#4ECDC4")}</div>
@@ -3888,6 +3915,11 @@ function MainApp({user,board,allBoards,onSwitchBoard,onBack,onSignOut}){
         onExportTasks={()=>{
           const lines=tasks.map(t=>{const bkt=buckets.find(b=>b.id===t.bucketId);return[t.title||"Untitled",`Status: ${COLS.find(c=>c.id===t.status)?.label||t.status}`,t.priority&&t.priority!=="normal"?`Priority: ${t.priority}`:"",bkt?`Bucket: ${bkt.emoji} ${bkt.label}`:"",t.action?`Action: ${t.action}`:"",t.dueDate?`Due: ${t.dueDate}`:"",t.frequency?`Freq: ${t.frequency}`:"",t.notes?`Notes: ${t.notes}`:""].filter(Boolean).join(" | ");});
           const blob=new Blob([lines.join("\n")],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`daycrush-tasks-${board.name.replace(/[^a-z0-9]/gi,"_")}-${new Date().toISOString().slice(0,10)}.txt`;a.click();
+        }}
+        onExportBoard={()=>{
+          const exportData={exportedAt:new Date().toISOString(),boardName:board.name,boardEmoji:board.emoji,buckets:buckets.map(b=>({id:b.id,label:b.label,emoji:b.emoji,color:b.color})),tasks:tasks.filter(t=>!t.done).map(t=>{const bkt=buckets.find(b=>b.id===t.bucketId);return{...t,_bucketLabel:bkt?bkt.label:null,_bucketEmoji:bkt?bkt.emoji:null};})};
+          const json=JSON.stringify(exportData,null,2);
+          const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([json],{type:"application/json"}));a.download=`${board.name.replace(/[^a-z0-9]/gi,"_")}-board-export.json`;a.click();
         }}
         onExportLog={()=>{
           const log=JSON.parse(localStorage.getItem(logKey)||"[]");
