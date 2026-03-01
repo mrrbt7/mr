@@ -3821,6 +3821,14 @@ function MainApp({user,board,allBoards,onSwitchBoard,onBack,onSignOut}){
     return true;
   });
 
+
+  // Bucket-only filter for views that show ALL tasks regardless of day filter
+  const visBucket=tasks.filter(t=>{
+    if(t.isRef)return false;
+    if(hiddenBucketIds.size>0&&t.bucketId&&hiddenBucketIds.has(t.bucketId))return false;
+    if(activeTab!=="all"&&t.bucketId!==activeTab&&!childBucketIds.includes(t.bucketId))return false;
+    return true;
+  });
   const oCt=tasks.filter(t=>t.dueDate&&daysDiff(t.dueDate)<0).length;
   const tCt=tasks.filter(t=>t.dueDate&&daysDiff(t.dueDate)===0).length;
   const visibleBuckets=buckets.filter(b=>!b.hidden);
@@ -3864,8 +3872,8 @@ function MainApp({user,board,allBoards,onSwitchBoard,onBack,onSignOut}){
         <div style={{display:"flex",flexDirection:"column",flex:1,minHeight:0}}>
         <QuickAddBar boardId={board.id} onAdd={addTask} onOpenModal={()=>setShowQuickAdd(true)} readOnly={readOnly}/>
         <div style={{flex:1,overflowX:"auto",overflowY:"hidden",padding:"12px 16px 0",display:"flex",gap:10,alignItems:"stretch",minHeight:0}}>
-          {COLS.filter(col=>!(col.id==="do"&&settings.hideEmptyDo&&vis.filter(t=>t.status==="do").length===0)).map(col=>(
-            <Column key={col.id} col={col} boardId={board.id} buckets={buckets} activeTab={activeTab} tasks={vis.filter(t=>t.status===col.id)} onEdit={setEditing} onDelete={delTask} onCheck={checkTask} onDuplicate={duplicateTask} onAddTask={addTask} readOnly={readOnly} draggingId={draggingId} celebratingIds={celebratingIds} onDragStart={handleDragStart} onDragOver={()=>{}} onDrop={handleDrop} onDropCol={handleDropCol}/>
+          {COLS.filter(col=>!(col.id==="do"&&settings.hideEmptyDo&&visBucket.filter(t=>t.status==="do").length===0)).map(col=>(
+            <Column key={col.id} col={col} boardId={board.id} buckets={buckets} activeTab={activeTab} tasks={visBucket.filter(t=>t.status===col.id)} onEdit={setEditing} onDelete={delTask} onCheck={checkTask} onDuplicate={duplicateTask} onAddTask={addTask} readOnly={readOnly} draggingId={draggingId} celebratingIds={celebratingIds} onDragStart={handleDragStart} onDragOver={()=>{}} onDrop={handleDrop} onDropCol={handleDropCol}/>
           ))}
         </div>
         {!readOnly&&<div style={{padding:"8px 16px",borderTop:`1px solid ${BORDER}`,background:"#000",flexShrink:0,display:"flex",justifyContent:"flex-end"}}>
@@ -3880,17 +3888,17 @@ function MainApp({user,board,allBoards,onSwitchBoard,onBack,onSignOut}){
         <QuickAddBar boardId={board.id} onAdd={addTask} onOpenModal={()=>setShowQuickAdd(true)} readOnly={readOnly}/>
         <HourlyCalendar tasks={tasks} buckets={buckets} onEdit={setEditing} onCheck={checkTask} readOnly={readOnly} celebratingIds={celebratingIds} sb={activeTab==="all"} onAddTask={addTask} hideTimeFrames={settings.hideTimeFrames} dayFilter={dayFilter} activeTab={activeTab} allBuckets={buckets}/>
       </div>}
-      {viewMode==="day"&&<DayView tasks={vis} buckets={buckets} activeTab={activeTab} onEdit={setEditing} onDelete={delTask} onCheck={checkTask} readOnly={readOnly} celebratingIds={celebratingIds} onAddTask={addTask} boardId={board.id} hideTimeFrames={settings.hideTimeFrames} onOpenModal={()=>setShowQuickAdd(true)}/>}
+      {viewMode==="day"&&<DayView tasks={visBucket} buckets={buckets} activeTab={activeTab} onEdit={setEditing} onDelete={delTask} onCheck={checkTask} readOnly={readOnly} celebratingIds={celebratingIds} onAddTask={addTask} boardId={board.id} hideTimeFrames={settings.hideTimeFrames} onOpenModal={()=>setShowQuickAdd(true)}/>}
       {viewMode==="monthly"&&<MonthlyView tasks={tasks} buckets={buckets} onEdit={handleEdit} celebratingIds={celebratingIds}/>}
       {viewMode==="taba"&&<TabataView tasks={tasks} onCheck={checkTask} onEdit={setEditing} celebratingIds={celebratingIds}/>}
       {viewMode==="health"&&<HealthView tasks={tasks} buckets={buckets} onEdit={setEditing} activeTab={activeTab} childBucketIds={childBucketIds}/>}
       {viewMode==="dash"&&<DashboardView tasks={tasks} buckets={buckets} onEdit={handleEdit} onCheck={checkTask} celebratingIds={celebratingIds} readOnly={readOnly} dayFilter={dayFilter}/>}
-      {viewMode==="onesies"&&<OnesiesView tasks={tasks} buckets={buckets} onEdit={handleEdit} onCheck={checkTask} onDelete={delTask} celebratingIds={celebratingIds} readOnly={readOnly} onAddTask={addTask} boardId={board.id}/>}
+      {viewMode==="onesies"&&<OnesiesView tasks={visBucket} buckets={buckets} onEdit={handleEdit} onCheck={checkTask} onDelete={delTask} celebratingIds={celebratingIds} readOnly={readOnly} onAddTask={addTask} boardId={board.id}/>}
       {viewMode==="inbox"&&<InboxView tasks={tasks} buckets={buckets} boardId={board.id} onAdd={addTask} onEdit={handleEdit} readOnly={readOnly}/>}
       {viewMode==="ref"&&<RefBoardView tasks={tasks} buckets={buckets} boardId={board.id} onAdd={addTask} onEdit={handleEdit} readOnly={readOnly}/>}
       {viewMode==="list"&&<div style={{display:"flex",flexDirection:"column",flex:1,minHeight:0}}>
         <QuickAddBar boardId={board.id} onAdd={addTask} onOpenModal={()=>setShowQuickAdd(true)} readOnly={readOnly}/>
-        <DurationView tasks={vis} buckets={buckets} actions={actions} brands={brands} persons={persons} labels={labels} activeTab={activeTab} onEdit={setEditing} onDelete={delTask} onCheck={checkTask} readOnly={readOnly} celebratingIds={celebratingIds} onAddTask={addTask} boardId={board.id}/>
+        <DurationView tasks={visBucket} buckets={buckets} actions={actions} brands={brands} persons={persons} labels={labels} activeTab={activeTab} onEdit={setEditing} onDelete={delTask} onCheck={checkTask} readOnly={readOnly} celebratingIds={celebratingIds} onAddTask={addTask} boardId={board.id}/>
       </div>}
 
       <div style={{borderTop:`1px solid ${theme.border}`,background:theme.navBg,flexShrink:0,paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
