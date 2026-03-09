@@ -3669,32 +3669,64 @@ function SimpleView({tasks,onEdit}){
   const {text:svTx,border:svBo,cardBg:svCard,lm:svLm}=useTheme();
   const [q,setQ]=useState("");
 
+  // For display purposes, weekday frequencies = 7d
+  const freqDaysSimple=f=>{
+    if(!f)return null;
+    const s=f.trim().toLowerCase();
+    if(WDN.includes(s)||s==="weekday"||s==="weekdays"||s==="weekend"||s==="weekends"||s==="weekly")return 7;
+    return freqToNum(f);
+  };
+
   const rows=tasks
     .filter(t=>!t.done&&t.frequency&&t.frequency.trim())
     .map(t=>{
-      const freqDays=freqToNum(t.frequency);
+      const freqDays=freqDaysSimple(t.frequency);
       const sinceDays=taskDaysSinceDone(t);
-      // delta: positive=still good (days remaining), negative=overdue
       const delta=(freqDays!==null&&sinceDays!==null)?freqDays-sinceDays:null;
       return{t,freqDays,sinceDays,delta};
-    })
-    .sort((a,b)=>{
-      // never done → bottom; overdue first; then by most urgent
-      if(a.sinceDays===null&&b.sinceDays!==null)return 1;
-      if(a.sinceDays!==null&&b.sinceDays===null)return -1;
-      if(a.delta!==null&&b.delta!==null)return a.delta-b.delta;
-      return 0;
     });
 
   const filtered=q.trim()?rows.filter(({t})=>(t.title||"").toLowerCase().includes(q.toLowerCase())):rows;
 
-  const sinceColor=(sinceDays,freqDays)=>{
-    if(sinceDays===null)return svLm?"#6688aa":MUTED;
-    if(freqDays===null)return svLm?"#0a0a1a":TEXT;
-    const d=freqDays-sinceDays;
-    if(d<0)return"#FF453A";
-    if(d===0)return"#FF9F0A";
-    return"#30D158";
+  const overdue=filtered.filter(r=>r.delta!==null&&r.delta<0).sort((a,b)=>a.delta-b.delta);
+  const due=filtered.filter(r=>r.delta!==null&&r.delta===0);
+  const notYet=filtered.filter(r=>r.delta!==null&&r.delta>0).sort((a,b)=>a.delta-b.delta);
+  const never=filtered.filter(r=>r.sinceDays===null);
+
+  const headerRow=(
+    <div style={{display:"grid",gridTemplateColumns:"1fr 52px 60px",gap:8,padding:"2px 12px 4px",flexShrink:0}}>
+      <span style={{fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1.2,textTransform:"uppercase"}}>Task</span>
+      <span style={{fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1.2,textTransform:"uppercase",textAlign:"center"}}>Every</span>
+      <span style={{fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1.2,textTransform:"uppercase",textAlign:"center"}}>Since</span>
+    </div>
+  );
+
+  const Row=({t,freqDays,sinceDays,delta,sinceColor})=>(
+    <div key={t.id} onClick={()=>onEdit(t)}
+      style={{display:"grid",gridTemplateColumns:"1fr 52px 60px",gap:8,alignItems:"center",padding:"9px 12px",borderRadius:8,background:svCard,marginBottom:3,border:`1px solid ${svBo}`,cursor:"pointer",transition:"border-color .1s"}}
+      onMouseEnter={e=>e.currentTarget.style.borderColor="#444"}
+      onMouseLeave={e=>e.currentTarget.style.borderColor=svBo}>
+      <span style={{fontSize:13,color:svTx,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.title||<span style={{color:MUTED,fontStyle:"italic"}}>Untitled</span>}</span>
+      <span style={{fontSize:12,color:MUTED,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{freqDays!==null?`${freqDays}d`:"—"}</span>
+      <span style={{fontSize:12,fontWeight:700,color:sinceColor,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{sinceDays===null?"never":`${sinceDays}d`}</span>
+    </div>
+  );
+
+  const Section=({label,accent,bg,items,sinceColor,empty})=>{
+    if(items.length===0&&!empty)return null;
+    return(
+      <div style={{marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0 6px",marginBottom:2}}>
+          <div style={{width:3,height:14,borderRadius:2,background:accent,flexShrink:0}}/>
+          <span style={{fontSize:10,fontWeight:700,color:accent,letterSpacing:1.2,textTransform:"uppercase"}}>{label}</span>
+          <span style={{fontSize:10,color:MUTED,fontWeight:500}}>{items.length}</span>
+        </div>
+        {items.length===0
+          ? <div style={{fontSize:12,color:MUTED,fontStyle:"italic",padding:"6px 12px",opacity:.6}}>{empty}</div>
+          : items.map(r=><Row key={r.t.id} {...r} sinceColor={sinceColor}/>)
+        }
+      </div>
+    );
   };
 
   return(
@@ -3703,36 +3735,17 @@ function SimpleView({tasks,onEdit}){
         <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Filter…" style={{flex:1,padding:"6px 10px",borderRadius:8,border:`1px solid ${svBo}`,background:svCard,color:svTx,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
         <span style={{fontSize:10,fontWeight:700,color:MUTED,letterSpacing:.5,flexShrink:0}}>≡ {filtered.length}</span>
       </div>
-      {/* Header row */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 52px 60px",gap:8,padding:"4px 16px 4px",flexShrink:0}}>
-        <span style={{fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1.2,textTransform:"uppercase"}}>Task</span>
-        <span style={{fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1.2,textTransform:"uppercase",textAlign:"center"}}>Every</span>
-        <span style={{fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1.2,textTransform:"uppercase",textAlign:"center"}}>Since</span>
-      </div>
-      <div style={{flex:1,overflowY:"auto",padding:"2px 16px 24px"}}>
-        {filtered.map(({t,freqDays,sinceDays,delta})=>{
-          const sc=sinceColor(sinceDays,freqDays);
-          return(
-            <div key={t.id} onClick={()=>onEdit(t)}
-              style={{display:"grid",gridTemplateColumns:"1fr 52px 60px",gap:8,alignItems:"center",padding:"9px 12px",borderRadius:8,background:svCard,marginBottom:3,border:`1px solid ${svBo}`,cursor:"pointer",transition:"border-color .1s"}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#444"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor=svBo}>
-              <span style={{fontSize:13,color:svTx,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.title||<span style={{color:MUTED,fontStyle:"italic"}}>Untitled</span>}</span>
-              <span style={{fontSize:12,color:MUTED,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>
-                {freqDays!==null?`${freqDays}d`:"—"}
-              </span>
-              <span style={{fontSize:12,fontWeight:700,color:sc,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>
-                {sinceDays===null?"never":`${sinceDays}d`}
-              </span>
-            </div>
-          );
-        })}
-        {filtered.length===0&&(
-          <div style={{textAlign:"center",padding:"64px 0",color:MUTED,fontSize:14,fontStyle:"italic"}}>
-            <div style={{fontSize:32,marginBottom:12}}>≡</div>
-            {q.trim()?"No matches":"No tasks with frequency set"}
-          </div>
-        )}
+      {headerRow}
+      <div style={{flex:1,overflowY:"auto",padding:"4px 16px 24px"}}>
+        {filtered.length===0
+          ? <div style={{textAlign:"center",padding:"64px 0",color:MUTED,fontSize:14,fontStyle:"italic"}}><div style={{fontSize:32,marginBottom:12}}>≡</div>{q.trim()?"No matches":"No tasks with frequency set"}</div>
+          : <>
+              <Section label="Overdue" accent="#FF453A" items={overdue} sinceColor="#FF453A"/>
+              <Section label="Due" accent="#FF9F0A" items={due} sinceColor="#FF9F0A"/>
+              <Section label="Not Due Yet" accent="#30D158" items={notYet} sinceColor="#30D158"/>
+              {never.length>0&&<Section label="Never Done" accent={MUTED} items={never} sinceColor={MUTED}/>}
+            </>
+        }
       </div>
     </div>
   );
