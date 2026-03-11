@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#000000"/>
-<title>MR v3.13</title>
+<title>CIN v3.13</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -106,8 +106,8 @@ html.light input::placeholder,html.light textarea::placeholder{color:#6688aa!imp
 const {useState,useEffect,useRef,useCallback,useMemo,createContext,useContext}=React;
 const ThemeCtx=createContext({bg:"#000",navBg:"#000",cardBg:"#1c1c1e",col:"#111",border:"#2a2a2a",text:"#e8e8e8",muted:"#555",inp:"#1a1a1a",lm:false});
 const useTheme=()=>useContext(ThemeCtx);
-const SURL='https://hnfvtllodmgsipyuwzsx.supabase.co'; // MR
-const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZnZ0bGxvZG1nc2lweXV3enN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MjgwNzEsImV4cCI6MjA4NzMwNDA3MX0.4YzxxQK9PPPo1qGs9mEb6JhE5Ic6Y3_Lt9CGYtCCZEU';
+const SURL='https://rhqmwakrnixhabcqbyqe.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJocW13YWtybml4aGFiY3FieXFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzMDQ1MjUsImV4cCI6MjA4Nzg4MDUyNX0.aAAoqkMfAUhjGKunkEXe8-MDacou6ePqfcgRVdUf-mc';
 const db=supabase.createClient(SURL,SKEY);
 const OWNER_EMAIL='unleashjarvis@gmail.com';
 const LIME="#CAFF4C",BORDER="#2a2a2a",TEXT="#e8e8e8",MUTED="#555",CARD_BG="#1c1c1e",COL_BG="#111",BLUE="#1d9bf0";
@@ -118,7 +118,7 @@ const GAMEDAY_OPTS=["","GAMEDAY","DAY BEFORE GD","2 DAYS BEFORE GD","3 DAYS BEFO
 const DEFAULT_ACTIONS=[{id:"buy",emoji:"🛒",label:"Buy"},{id:"call",emoji:"📞",label:"Call"},{id:"email",emoji:"📧",label:"Email"},{id:"research",emoji:"🔍",label:"Research"},{id:"review",emoji:"👁",label:"Review"},{id:"schedule",emoji:"📅",label:"Schedule"},{id:"watch",emoji:"👀",label:"Watch"},{id:"read",emoji:"📖",label:"Read"},{id:"fix",emoji:"🔧",label:"Fix"},{id:"build",emoji:"🏗",label:"Build"},{id:"plan",emoji:"📋",label:"Plan"},{id:"pay",emoji:"💳",label:"Pay"}];
 const WDN=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
 const WDL=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const DEF_SETTINGS={hideEmptyDo:false,defaultView:'dash',lightMode:false,dayStartTime:'00:30',hideTimeFrames:false,showActionTag:false,showBucketColor:true,showCardBg:true,showDuration:true,showFrequency:true,hideMundane:false};
+const DEF_SETTINGS={hideEmptyDo:false,defaultView:'plan',lightMode:false,dayStartTime:'00:30',hideTimeFrames:false,showActionTag:false,showBucketColor:true,showCardBg:true,showDuration:true,showFrequency:true,hideMundane:false};
 // Eastern time with configurable day-start rollover
 const etNow=()=>{
   const now=new Date();
@@ -1172,7 +1172,7 @@ function SettingsMdl({settings,onChange,onBuckets,onMembers,onActions,onBrands,o
     </div>
   );
   const sec=label=>(<div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:MUTED,textTransform:"uppercase",padding:"14px 0 6px",marginTop:2}}>{label}</div>);
-  const VIEWS=[{id:"dash",label:"Dashboard ◈"},{id:"onesies",label:"Onesies ①"},{id:"inbox",label:"Inbox ⊟"},{id:"cal",label:"Calendar ▦"},{id:"day",label:"Timeline ⏱"},{id:"board",label:"Board ⊞"},{id:"list",label:"List ☰"},{id:"health",label:"Health ⬡"},{id:"monthly",label:"Monthly+ ◷"},{id:"gameday",label:"Gameday 🏈"}];
+  const VIEWS=[{id:"plan",label:"Plan ▣"},{id:"dash",label:"Dashboard ◈"},{id:"onesies",label:"Onesies ①"},{id:"inbox",label:"Inbox ⊟"},{id:"cal",label:"Calendar ▦"},{id:"day",label:"Timeline ⏱"},{id:"board",label:"Board ⊞"},{id:"list",label:"List ☰"},{id:"health",label:"Health ⬡"},{id:"monthly",label:"Monthly+ ◷"},{id:"gameday",label:"Gameday 🏈"}];
   return(
     <Modal onClose={onClose} maxWidth={360}>
       <div style={{padding:"18px 18px 4px"}}>
@@ -3669,7 +3669,6 @@ function SimpleView({tasks,onEdit}){
   const {text:svTx,border:svBo,cardBg:svCard,lm:svLm}=useTheme();
   const [q,setQ]=useState("");
 
-  // For display purposes, weekday frequencies = 7d
   const freqDaysSimple=f=>{
     if(!f)return null;
     const s=f.trim().toLowerCase();
@@ -3712,7 +3711,7 @@ function SimpleView({tasks,onEdit}){
     </div>
   );
 
-  const Section=({label,accent,bg,items,sinceColor,empty})=>{
+  const Section=({label,accent,items,sinceColor,empty})=>{
     if(items.length===0&&!empty)return null;
     return(
       <div style={{marginBottom:16}}>
@@ -3759,7 +3758,7 @@ function Sidebar({viewMode,onView,onClose,onBack,onBoards,onSettings,onDisplay,o
   const sHov=sLm?"#c5d8ec":"#111";
   const sActive=sLm?"#b8cfe8":"#161616";
   const sDivBorder=sLm?"#b0c8e0":BORDER;
-  const VIEWS=[{id:"dash",icon:"◈",label:"Dashboard"},{id:"cal",icon:"▦",label:"Calendar"},{id:"day",icon:"⏱",label:"Timeline"},{id:"board",icon:"⊞",label:"Board"},{id:"list",icon:"☰",label:"List"},{id:"simple",icon:"≡",label:"Simple"}];
+  const VIEWS=[{id:"plan",icon:"▣",label:"Plan"},{id:"dash",icon:"◈",label:"Dashboard"},{id:"cal",icon:"▦",label:"Calendar"},{id:"day",icon:"⏱",label:"Timeline"},{id:"board",icon:"⊞",label:"Board"},{id:"list",icon:"☰",label:"List"},{id:"simple",icon:"≡",label:"Simple"}];
   const TOOLS=[{id:"inbox",icon:"⊟",label:"Inbox"},{id:"onesies",icon:"①",label:"Onesies"},{id:"monthly",icon:"◷",label:"Monthly+"},{id:"health",icon:"⬡",label:"Health"},{id:"ref",icon:"⊟",label:"Reference"},{id:"gameday",icon:"🏈",label:"Gameday"},{id:"taba",icon:"◉",label:"Tabata"},{id:"summ",icon:"◎",label:"Summary"},{id:"plan",icon:"▣",label:"Plan"},{id:"sprint",icon:"⚡",label:"Sprints"}];
   const row=(icon,label,onClick,active)=>(
     <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 18px",border:"none",background:active?sActive:"transparent",color:active?sText:sMuted,fontFamily:"inherit",fontSize:13,fontWeight:active?700:400,cursor:"pointer",textAlign:"left",borderRadius:0,transition:"background .1s"}}
@@ -4032,11 +4031,17 @@ function PlanView({tasks,buckets,onEdit,onCheck,onSnooze,readOnly,celebratingIds
   );
   const PlanRow=({t,isOverdue,isOneOff})=>{
     const bkt=buckets.find(b=>b.id===t.bucketId);
+    const bktMain=bkt?.mainColor||null;
+    const bktBg=bkt?.bgColor||null;
     const isCelebrating=celebratingIds.has(t.id);
     const isDone=t.done||isCelebrating;
     const isSnoozed=snoozedIds.has(t.id);
     const d=t.dueDate?daysDiff(t.dueDate):null;
     const overDays=(d!==null&&d<0)?Math.abs(d):0;
+    // Card background: bucket bgColor takes priority, then celebrate/overdue/default
+    const cardBg=isCelebrating?(pvLm?"#d8f5e0":"#0a140a"):isDone?(pvLm?"#e8f5e8":"#0a120a"):bktBg?(bktBg+"22"):(pvLm?"#ffffff":pvCard);
+    const cardBorder=isCelebrating?"#30D158":(bktMain?bktMain+"55":isOverdue?"#FF453A55":pvBo);
+    const leftAccent=bktMain||null;
     if(isSnoozed){
       return(
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:12,border:"1px solid #FF9F0A66",background:pvLm?"#fffbf0":"#1a0e00",marginBottom:6,transition:"all .3s"}}>
@@ -4049,16 +4054,17 @@ function PlanView({tasks,buckets,onEdit,onCheck,onSnooze,readOnly,celebratingIds
       );
     }
     return(
-      <div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:12,border:`1px solid ${isCelebrating?"#30D158":isOverdue?"#FF453A55":pvBo}`,background:isCelebrating?(pvLm?"#d8f5e0":"#0a140a"):isDone?(pvLm?"#e8f5e8":"#0a120a"):(pvLm?"#ffffff":pvCard),marginBottom:6,opacity:isDone?.6:1,transition:"all .3s"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:12,border:`1px solid ${cardBorder}`,background:cardBg,marginBottom:6,opacity:isDone?.6:1,transition:"all .3s",borderLeft:leftAccent?`3px solid ${leftAccent}`:`1px solid ${cardBorder}`}}>
         {!isOneOff&&(t.time
-          ?<div style={{fontSize:13,fontWeight:800,color:isDone?"#30D158":isOverdue?"#FF453A":"#5E5CE6",flexShrink:0,minWidth:50,textAlign:"center"}}>{fmtTime(t.time)}</div>
-          :<div style={{fontSize:11,color:pvMu,flexShrink:0,minWidth:50,textAlign:"center"}}>{overDays>0?<span style={{color:"#FF453A",fontWeight:700}}>-{overDays}d</span>:"today"}</div>
+          ?<div style={{fontSize:18,fontWeight:800,color:isDone?"#30D158":isOverdue?"#FF453A":"#5E5CE6",flexShrink:0,minWidth:58,textAlign:"center",letterSpacing:-.5}}>{fmtTime(t.time)}</div>
+          :<div style={{fontSize:12,color:pvMu,flexShrink:0,minWidth:58,textAlign:"center"}}>{overDays>0?<span style={{color:"#FF453A",fontWeight:700,fontSize:14}}>-{overDays}d</span>:"today"}</div>
         )}
-        {isOneOff&&<div style={{fontSize:10,color:pvMu,flexShrink:0,minWidth:50,textAlign:"center",fontStyle:"italic"}}>no date</div>}
+        {isOneOff&&<div style={{fontSize:10,color:pvMu,flexShrink:0,minWidth:58,textAlign:"center",fontStyle:"italic"}}>no date</div>}
         <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>onEdit(t)}>
           <div style={{fontSize:14,fontWeight:600,color:isDone?"#30D158":(pvLm?"#1a1a1a":pvTx),textDecoration:isDone?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.3}}>{t.title||"Untitled"}</div>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
-            {bkt&&<span style={{fontSize:10,color:bkt.mainColor||pvMu}}>{bkt.emoji} {bkt.label}</span>}
+          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
+            {bkt&&<span style={{fontSize:10,color:bktMain||pvMu,fontWeight:bktMain?600:400}}>{bkt.emoji} {bkt.label}</span>}
+            {t.frequency&&t.frequency.trim()&&<span style={{fontSize:10,color:"#5E5CE6",background:"#5E5CE611",borderRadius:4,padding:"1px 5px",fontWeight:600}}>{t.frequency}</span>}
             {overDays>0&&<span style={{fontSize:10,fontWeight:700,color:"#FF453A",background:"#FF453A18",borderRadius:4,padding:"1px 5px"}}>⚠ {overDays}d overdue</span>}
             {isCelebrating&&<span style={{fontSize:11,color:"#30D158",fontWeight:700}}>✓ Done!</span>}
           </div>
@@ -4085,7 +4091,7 @@ function PlanView({tasks,buckets,onEdit,onCheck,onSnooze,readOnly,celebratingIds
         <div style={{flex:1}}/>
         <span style={{fontSize:10,color:pvMu}}>tap title to edit</span>
       </div>
-      <div style={{flex:1,overflowY:"auto",padding:"14px 16px",maxWidth:680,margin:"0 auto",width:"100%",boxSizing:"border-box"}}>
+      <div style={{flex:1,overflowY:"auto",padding:"14px 16px",width:"100%",boxSizing:"border-box"}}>
         {planTasks.length===0&&oneOffTasks.length===0&&<div style={{textAlign:"center",padding:"56px 0",color:pvMu,fontSize:14}}>
           <div style={{fontSize:32,marginBottom:10}}>▣</div>
           Nothing due today — you're clear!
@@ -4686,30 +4692,6 @@ function MainApp({user,board,allBoards,onSwitchBoard,onBack,onSignOut}){
         <QuickAddBar boardId={board.id} onAdd={addTask} onOpenModal={()=>setShowQuickAdd(true)} readOnly={readOnly}/>
         <DurationView tasks={vis} buckets={buckets} actions={actions} brands={brands} persons={persons} labels={labels} devices={devices} activeTab={activeTab} onEdit={setEditing} onDelete={delTask} onCheck={checkTask} readOnly={readOnly} celebratingIds={celebratingIds} onAddTask={addTask} boardId={board.id}/>
       </div>}
-
-      <div style={{borderTop:`1px solid ${theme.border}`,background:theme.navBg,flexShrink:0,paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
-        <div style={{display:"flex",alignItems:"stretch",height:54}}>
-          {[
-            {id:"dash",icon:"◈",label:"Dash"},
-            {id:"cal",icon:"▦",label:"Calendar"},
-            {id:"day",icon:"⏱",label:"Timeline"},
-            {id:"board",icon:"⊞",label:"Board"},
-            {id:"list",icon:"☰",label:"List"},
-            {id:"plan",icon:"▣",label:"Plan"},
-            {id:"__search__",icon:"⌕",label:"Search"},
-          ].map(v=>{
-            const active=v.id==="__search__"?false:viewMode===v.id;
-            return(
-              <button key={v.id}
-                onClick={()=>v.id==="__search__"?setShowSearch(true):setViewMode(v.id)}
-                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"none",border:"none",cursor:"pointer",color:active?(theme.lm?theme.limeText:LIME):theme.muted,borderTop:active?`2px solid ${theme.lm?theme.limeText:LIME}`:"2px solid transparent",transition:"color .15s,border-color .15s",padding:"6px 2px 4px"}} className={active&&theme.lm?"lm-nav-active":""}>
-                <span style={{fontSize:16,lineHeight:1}}>{v.icon}</span>
-                <span style={{fontSize:7.5,letterSpacing:.4,fontWeight:active?700:400,textTransform:"uppercase"}}>{v.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {showSidebar&&<Sidebar viewMode={viewMode} onView={setViewMode} onClose={()=>setShowSidebar(false)} onBack={onBack} onBoards={()=>{setShowSidebar(false);onBack();}}  onSettings={()=>setShowSettings(true)} onDisplay={()=>setShowDisplay(true)} onStats={()=>setShowStats(true)} onBuckets={()=>setShowBuckets(true)} onActions={()=>setShowActions(true)} onBrands={()=>setShowBrands(true)} onPersons={()=>setShowPersons(true)} onLabels={()=>setShowLabels(true)} onDevices={()=>setShowDevices(true)} onSprints={()=>setShowSprints(true)} onImport={()=>setShowImport(true)} board={board}/>}
       {showQuickAdd&&(
